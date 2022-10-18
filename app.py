@@ -1,8 +1,10 @@
+from os import pipe
 import streamlit as st
 import joblib
 import pandas as pd
 
-best_model = joblib.load('Mejor_Modelo__model.pkl')
+best_model = joblib.load('xgboost.pkl')
+pipeline = joblib.load('pipeline_model.pkl')
 
 def main():
     st.title('Modelamiento de riesgo crediticio')
@@ -135,7 +137,6 @@ def main():
     df = user_input_parameters()
     st.dataframe(df)
 
-    
     def classify(probabilitys,value):
         #return probabilitys
         if value[0] == 1:
@@ -147,18 +148,23 @@ def main():
 
     #new_df = pipe.transform(df)
     if st.button('EJECUTAR'):
-        st.success(classify(best_model.predict_proba(df), best_model.predict(df)))
+        new_df = pipeline.transform(df)
+        st.success(classify(best_model.predict_proba(new_df), best_model.predict(new_df)))
         
-
     st.subheader('Ejemplo Caso 0')
+    st.markdown('A continuacion se presenta un caso de ejemplo donde el prestatario va a **cumplir** con sus pagos.')
     st.dataframe(df_0)
     if st.button('EJECUTAR CASO 0'):
-        st.success(classify(best_model.predict_proba(df_0), best_model.predict(df_0)))
+        new_df = pipeline.transform(df_0)
+        st.success(classify(best_model.predict_proba(new_df), best_model.predict(new_df)))
     
     st.subheader('Ejemplo Caso 1')
+    st.markdown('A continuacion se presenta un caso de ejemplo donde el prestatario va a **incumplir** con sus pagos.')
+    st.markdown('')
     st.dataframe(df_1)
     if st.button('EJECUTAR CASO 1'):
-        st.success(classify(best_model.predict_proba(df_1), best_model.predict(df_1)))
+        new_df = pipeline.transform(df_1)
+        st.success(classify(best_model.predict_proba(new_df), best_model.predict(new_df)))
 
 if __name__ == '__main__':
     main()
