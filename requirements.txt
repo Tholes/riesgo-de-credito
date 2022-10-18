@@ -3,3 +3,4 @@ streamlit
 joblib
 sklearn
 optbinning
+xgboost
