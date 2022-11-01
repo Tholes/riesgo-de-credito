@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 best_model = joblib.load('xgboost.pkl')
 pipeline = joblib.load('pipeline_model.pkl')
 scorecard = joblib.load('scorecard.pkl')
-complete_csv = pd.read_csv('preprocess_score.csv')
+complete_csv = pd.read_csv('only_score.csv')
 
 def main():
     st.title('Modelamiento de riesgo crediticio')
