@@ -2,9 +2,12 @@ from os import pipe
 import streamlit as st
 import joblib
 import pandas as pd
+import matplotlib.pyplot as plt
 
 best_model = joblib.load('xgboost.pkl')
 pipeline = joblib.load('pipeline_model.pkl')
+scorecard = joblib.load('scorecard.pkl')
+complete_csv = pd.read_csv('preprocess_score.csv')
 
 def main():
     st.title('Modelamiento de riesgo crediticio')
@@ -133,30 +136,39 @@ def main():
     df_1 = pd.DataFrame(data_1, index =[0])
 
     st.markdown('En esta herramienta podrás predecir la probabilidad de que un individuo incumpla sus obligaciones financieras en los siguientes 12 meses a la fecha de originación un crédito adquirido. Para ello, debe diligenciar o modificar los datos que se encuentran a la izquierda según la necesidad y especificación del caso.')
-    st.subheader('Datos ingresados')
-    df = user_input_parameters()
-    st.dataframe(df)
 
-    def classify(probabilitys,value):
+    df = user_input_parameters()
+    
+
+    def classify(probabilitys,value, score=0):
+        score = round(score)
         #return probabilitys
         if value[0] == 1:
             st.snow()
-            return f'El prestatario va a incumplir con sus pagos con una probabilidad del {round(probabilitys[0][1]*100,2)} %.'
+            return f'El prestatario va a incumplir con sus pagos con una probabilidad del {round(probabilitys[0][1]*100,2)} % y su Scorecard es de {score}.'
         else:
             st.balloons()
-            return f'El prestatario va a cumplir con sus pagos con una probabilidad del {round(probabilitys[0][0]*100,2)} %.'
+            return f'El prestatario va a cumplir con sus pagos con una probabilidad del {round(probabilitys[0][0]*100,2)} % y su Scorecard es de {score}.'
 
-    #new_df = pipe.transform(df)
-    if st.button('EJECUTAR'):
-        new_df = pipeline.transform(df)
-        st.success(classify(best_model.predict_proba(new_df), best_model.predict(new_df)))
-        
+    def display_graph(df_score, percentile):
+        fig,ax =  plt.subplots()
+        ax.hist(complete_csv['score'], 100, )
+        ax.axvline(df_score, color='r')  
+        ax.legend([f'El scorecard del prestatario está por encima del {round(percentile,2)*100} % '])
+        ax.set_xlabel('Scorecard')
+        ax.set_ylabel('Cantidad de personas')
+        st.pyplot(fig)  
+
     st.subheader('Ejemplo Caso 0')
     st.markdown('A continuacion se presenta un caso de ejemplo donde el prestatario va a **cumplir** con sus pagos.')
     st.dataframe(df_0)
     if st.button('EJECUTAR CASO 0'):
         new_df = pipeline.transform(df_0)
-        st.success(classify(best_model.predict_proba(new_df), best_model.predict(new_df)))
+        df_score = scorecard.score(df_0)[0]
+        st.success(classify(best_model.predict_proba(new_df), best_model.predict(new_df), df_score))
+        percentile = len(complete_csv[complete_csv['score']<df_score])/complete_csv.shape[0]
+        display_graph(df_score, percentile)
+        
     
     st.subheader('Ejemplo Caso 1')
     st.markdown('A continuacion se presenta un caso de ejemplo donde el prestatario va a **incumplir** con sus pagos.')
@@ -164,7 +176,21 @@ def main():
     st.dataframe(df_1)
     if st.button('EJECUTAR CASO 1'):
         new_df = pipeline.transform(df_1)
-        st.success(classify(best_model.predict_proba(new_df), best_model.predict(new_df)))
+        df_score = scorecard.score(df_1)[0]
+        st.success(classify(best_model.predict_proba(new_df), best_model.predict(new_df), df_score))
+        percentile = len(complete_csv[complete_csv['score']<df_score])/complete_csv.shape[0]
+        display_graph(df_score, percentile)
+    
+    st.subheader('Datos ingresados')
+    st.dataframe(df)
+    #new_df = pipe.transform(df)
+    if st.button('EJECUTAR'):
+        new_df = pipeline.transform(df)
+        df_score = scorecard.score(df)[0]
+        percentile = len(complete_csv[complete_csv['score']<df_score])/complete_csv.shape[0]
+        st.success(classify(best_model.predict_proba(new_df), best_model.predict(new_df), df_score))
+        display_graph(df_score, percentile)
+        
 
 if __name__ == '__main__':
     main()
